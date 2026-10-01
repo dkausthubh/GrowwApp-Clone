@@ -1,0 +1,6 @@
+@GrowwClone.Api_HostAddress = http://localhost:5101
+
+GET {{GrowwClone.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

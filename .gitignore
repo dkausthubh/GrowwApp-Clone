@@ -1,0 +1,22 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Secrets - never commit real connection strings or JWT keys
+**/appsettings.Development.json
+**/appsettings.Production.json
+
+# Angular / Node
+client/node_modules/
+client/dist/
+client/.angular/
+client/*.log
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
