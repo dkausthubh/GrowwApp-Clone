@@ -22,4 +22,8 @@ public class InstrumentsController : ControllerBase
         var item = await _market.GetByIdAsync(id);
         return item is null ? NotFound() : Ok(item);
     }
+
+    [HttpGet("{id:int}/history")]
+    public async Task<IActionResult> GetHistory(int id, [FromQuery] int minutes = 30)
+    => Ok(await _market.GetHistoryAsync(id, minutes));
 }

@@ -12,7 +12,7 @@ public class PriceSimulator : BackgroundService
 
     public PriceSimulator(IServiceScopeFactory scopeFactory) => _scopeFactory = scopeFactory;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+   protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -22,11 +22,20 @@ public class PriceSimulator : BackgroundService
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 var instruments = await db.Instruments.ToListAsync(stoppingToken);
+                var now = DateTime.UtcNow;
+
                 foreach (var i in instruments)
                 {
-                    var pct = (decimal)(_rng.NextDouble() * 0.01 - 0.005);   // -0.5% .. +0.5%
+                    var pct = (decimal)(_rng.NextDouble() * 0.01 - 0.005);
                     var newPrice = Math.Round(i.LastPrice * (1 + pct), 2);
                     i.LastPrice = Math.Max(newPrice, 1m);
+
+                    db.PriceHistory.Add(new()
+                    {
+                        InstrumentId = i.Id,
+                        Price = i.LastPrice,
+                        RecordedAt = now
+                    });
                 }
                 await db.SaveChangesAsync(stoppingToken);
             }
