@@ -28,6 +28,9 @@ Angular Material, RxJS
 - Buy/Sell orders with real wallet debit/credit and weighted-average holding price
 - Portfolio dashboard: invested value, current value, P&L (overall and per-holding)
 - Order history
+- Price alerts: set a target price (above/below) on any stock; a background
+  service checks live prices and notifies you when it's hit
+- In-app notifications with unread badge
 
 ## Project structure
 GrowwApp-Clone/
@@ -35,7 +38,7 @@ GrowwApp-Clone/
 │ ├── GrowwClone.Api/ # Controllers, Program.cs, JWT, Swagger
 │ ├── GrowwClone.Application/ # DTOs, service interfaces
 │ ├── GrowwClone.Domain/ # Entities, enums
-│ └── GrowwClone.Infrastructure/ # EF Core DbContext, migrations, services
+│ └── GrowwClone.Infrastructure/  # EF Core DbContext, migrations, services, background jobsservices
 └── client/ # Angular app
 └── src/app/
 ├── core/ # Services, guards, interceptor
@@ -77,7 +80,7 @@ App runs at `http://localhost:4200`.
 ## Roadmap
 
 - [x] Auth, market data, watchlist, trading, portfolio
-- [ ] Price alerts
+- [x] Price alerts
 - [ ] Historical charts
 - [ ] SIP / recurring investments
 - [ ] Refresh tokens + security hardening
