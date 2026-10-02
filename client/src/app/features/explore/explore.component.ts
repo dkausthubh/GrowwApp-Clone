@@ -11,6 +11,7 @@ import { MarketService } from '../../core/market.service';
 import { WatchlistService } from '../../core/watchlist.service';
 import { Instrument } from '../../core/models';
 import { OrderDialogComponent } from './order-dialog.component';
+import { AlertDialogComponent } from './alert-dialog.component';
 
 @Component({
   selector: 'app-explore',
@@ -27,9 +28,14 @@ import { OrderDialogComponent } from './order-dialog.component';
     <div class="grid">
       @for (i of instruments(); track i.id) {
         <div class="tile">
-          <button class="star" (click)="toggleStar(i)">
-            <mat-icon>{{ starred().has(i.id) ? 'star' : 'star_border' }}</mat-icon>
-          </button>
+          <div class="icons">
+            <button class="icon-btn" (click)="openAlert(i)" title="Set price alert">
+              <mat-icon>notifications_none</mat-icon>
+            </button>
+            <button class="icon-btn star" (click)="toggleStar(i)">
+              <mat-icon>{{ starred().has(i.id) ? 'star' : 'star_border' }}</mat-icon>
+            </button>
+          </div>
           <div class="sym">{{ i.symbol }}</div>
           <div class="name">{{ i.name }}</div>
           <div class="price">{{ i.lastPrice | currency:'INR':'symbol':'1.2-2' }}</div>
@@ -47,7 +53,9 @@ import { OrderDialogComponent } from './order-dialog.component';
     .search { width: 320px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
     .tile { position: relative; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; background: #fff; }
-    .star { position: absolute; top: 12px; right: 12px; background: none; border: none; cursor: pointer; color: #f5a623; }
+    .icons { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
+    .icon-btn { background: none; border: none; cursor: pointer; color: #6b7280; }
+    .icon-btn.star { color: #f5a623; }
     .sym { font-weight: 600; font-size: 18px; }
     .name { color: #6b7280; font-size: 13px; margin-bottom: 20px; }
     .price { font-size: 18px; font-weight: 500; }
@@ -105,5 +113,9 @@ export class ExploreComponent implements OnInit, OnDestroy {
 
   openOrder(i: Instrument) {
     this.dialog.open(OrderDialogComponent, { width: '340px', data: i });
+  }
+
+  openAlert(i: Instrument) {
+    this.dialog.open(AlertDialogComponent, { width: '340px', data: i });
   }
 }

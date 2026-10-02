@@ -70,3 +70,24 @@ public class Holding
     public decimal AvgPrice { get; set; }
     public Instrument? Instrument { get; set; }
 }
+public class PriceAlert
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public int InstrumentId { get; set; }
+    public AlertCondition Condition { get; set; }
+    public decimal TargetPrice { get; set; }
+    public AlertStatus Status { get; set; } = AlertStatus.Active;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? TriggeredAt { get; set; }
+    public Instrument? Instrument { get; set; }
+}
+
+public class Notification
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string Message { get; set; } = "";
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}

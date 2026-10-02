@@ -9,6 +9,7 @@ using GrowwClone.Infrastructure.Services;
 using GrowwClone.Application.Market;
 using GrowwClone.Application.Watchlist;
 using GrowwClone.Application.Trading;
+using GrowwClone.Application.Alerts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMarketService, MarketService>();
 builder.Services.AddScoped<IWatchlistService, WatchlistService>();
 builder.Services.AddScoped<ITradingService, TradingService>();
-
+builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddHostedService<AlertChecker>();
 builder.Services.AddHostedService<PriceSimulator>();
 
 builder.Services.AddCors(o => o.AddPolicy("angular", p =>
