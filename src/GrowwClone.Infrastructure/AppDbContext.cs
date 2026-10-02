@@ -14,7 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<WatchlistItem> Watchlists => Set<WatchlistItem>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Holding> Holdings => Set<Holding>();
-
+    public DbSet<PriceAlert> PriceAlerts => Set<PriceAlert>();
+    public DbSet<Notification> Notifications => Set<Notification>();
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.Entity<User>().HasIndex(u => u.Email).IsUnique();
@@ -41,6 +42,10 @@ public class AppDbContext : DbContext
             Seed(6, "SBIN", "State Bank of India", 800m),
             Seed(7, "ITC", "ITC Ltd", 470m),
             Seed(8, "WIPRO", "Wipro", 520m));
+
+        b.Entity<PriceAlert>().Property(a => a.TargetPrice).HasPrecision(18, 2);
+        b.Entity<PriceAlert>().HasIndex(a => new { a.UserId, a.Status });
+        b.Entity<Notification>().HasIndex(n => new { n.UserId, n.IsRead });
     }
 
     private static Instrument Seed(int id, string symbol, string name, decimal price) => new()
