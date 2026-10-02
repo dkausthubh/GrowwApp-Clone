@@ -28,6 +28,10 @@ export const routes: Routes = [
         path: 'orders',
         loadComponent: () => import('./features/orders/orders.component').then(m => m.OrdersComponent),
     },
+    {
+        path: 'alerts',
+        loadComponent: () => import('./features/alerts/alerts.component').then(m => m.AlertsComponent),
+    },
     ],
 },
   { path: '**', redirectTo: '' },
