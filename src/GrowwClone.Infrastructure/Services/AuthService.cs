@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Hosting;
+using GrowwClone.Application.Audit;
 
 namespace GrowwClone.Infrastructure.Services;
 
@@ -17,6 +18,15 @@ public class AuthService : IAuthService
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
     private readonly IHostEnvironment _env;
+    private readonly IAuditLogger _audit;
+
+    public AuthService(AppDbContext db, IConfiguration config, IHostEnvironment env, IAuditLogger audit)
+    {
+        _db = db;
+        _config = config;
+        _env = env;
+        _audit = audit;
+    }
     public AuthService(AppDbContext db, IConfiguration config, IHostEnvironment env)
     {
         _db = db;
@@ -47,6 +57,7 @@ public class AuthService : IAuthService
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+        await _audit.LogAsync(user.Id, "Register", $"New account created: {user.Email}");
 
         return new AuthResult(true, null, await IssueTokensAsync(user));
     }
@@ -56,8 +67,11 @@ public class AuthService : IAuthService
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+       if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            await _audit.LogAsync(user?.Id, "LoginFailed", $"Failed login attempt for {email}");
             return new LoginResult(false, "Invalid email or password.", false, null, null);
+        }
 
         var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
         var sessionToken = GenerateRefreshToken();   // reuse the same random-token helper
@@ -71,6 +85,7 @@ public class AuthService : IAuthService
             ExpiresAt = expires
         });
         await _db.SaveChangesAsync();
+        await _audit.LogAsync(user.Id, "LoginOtpSent", "Password verified, OTP challenge issued");
 
         // Dev-only: no email provider configured yet, so log instead of sending.
         // will Swap this for a real provider (SendGrid, Azure Communication Services, etc.) later.
@@ -85,17 +100,26 @@ public class AuthService : IAuthService
         var otp = await _db.OtpCodes.FirstOrDefaultAsync(o => o.SessionTokenHash == sessionHash);
     
         if (otp is null || otp.ConsumedAt is not null)
+        {
+            await _audit.LogAsync(null, "OtpFailed", "Invalid or reused MFA session token");
             return new AuthResult(false, "Invalid or already-used login session. Please log in again.", null);
-    
+        }
+
         if (otp.ExpiresAt <= DateTime.UtcNow)
+        {
+            await _audit.LogAsync(otp.UserId, "OtpFailed", "Expired OTP code");
             return new AuthResult(false, "Code expired. Please log in again.", null);
-    
+        }
+
         if (otp.CodeHash != Hash(request.Code))
+        {
+            await _audit.LogAsync(otp.UserId, "OtpFailed", "Incorrect OTP code entered");
             return new AuthResult(false, "Incorrect code.", null);
-    
+        }
         otp.ConsumedAt = DateTime.UtcNow;   // one-time use
         await _db.SaveChangesAsync();
-    
+        await _audit.LogAsync(otp.UserId, "LoginSuccess", "MFA verified, tokens issued");
+        
         var user = await _db.Users.FirstAsync(u => u.Id == otp.UserId);
         return new AuthResult(true, null, await IssueTokensAsync(user));
     }
@@ -118,9 +142,8 @@ public class AuthService : IAuthService
 
         if (stored.RevokedAt is not null)
         {
-            // Reuse of an already-rotated token: likely theft. Revoke the whole
-            // family (every token for this user) and force a fresh login.
             await RevokeAllForUserAsync(stored.UserId);
+            await _audit.LogAsync(stored.UserId, "RefreshTokenReuseDetected", "Possible token theft — all sessions revoked");
             return new AuthResult(false, "Session invalidated. Please log in again.", null);
         }
 
@@ -145,6 +168,7 @@ public class AuthService : IAuthService
         {
             stored.RevokedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
+            await _audit.LogAsync(stored.UserId, "Logout", "User logged out, refresh token revoked");
         }
     }
 

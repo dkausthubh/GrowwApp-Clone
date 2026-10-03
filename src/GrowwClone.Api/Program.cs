@@ -12,6 +12,7 @@ using GrowwClone.Application.Trading;
 using GrowwClone.Application.Alerts;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using GrowwClone.Application.Audit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,8 +25,10 @@ builder.Services.AddScoped<IMarketService, MarketService>();
 builder.Services.AddScoped<IWatchlistService, WatchlistService>();
 builder.Services.AddScoped<ITradingService, TradingService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IAuditLogger, AuditService>();
 builder.Services.AddHostedService<AlertChecker>();
 builder.Services.AddHostedService<PriceSimulator>();
+builder.Services.AddScoped<IAuditLogService, AuditService>();
 
 builder.Services.AddCors(o => o.AddPolicy("angular", p =>
     p.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod()));

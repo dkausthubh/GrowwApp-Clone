@@ -1,19 +1,20 @@
 using GrowwClone.Application.Trading;
 using GrowwClone.Domain;
 using Microsoft.EntityFrameworkCore;
+using GrowwClone.Application.Audit;
 
 namespace GrowwClone.Infrastructure.Services;
 
 public class TradingService : ITradingService
 {
     private readonly AppDbContext _db;
-
-    /// <summary>
-    /// Creates a trading service using the application's database context.
-    /// </summary>
-    /// <param name="db">The database context used to read and update trading data.</param>
-    public TradingService(AppDbContext db) => _db = db;
-
+    private readonly IAuditLogger _audit;
+    public TradingService(AppDbContext db, IAuditLogger audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
+    
     /// <summary>
     /// Validates and executes a buy or sell order in a database transaction.
     /// </summary>
@@ -52,6 +53,7 @@ public class TradingService : ITradingService
                 if (wallet.Balance < total)
                 {
                     await tx.RollbackAsync();
+                    await _audit.LogAsync(userId, "OrderRejected", $"Insufficient balance for buy {request.Quantity} {instrument.Symbol}");
                     return new OrderResult(false, "Insufficient wallet balance.", null);
                 }
 
@@ -84,6 +86,7 @@ public class TradingService : ITradingService
                 if (holding is null || holding.Quantity < request.Quantity)
                 {
                     await tx.RollbackAsync();
+                    await _audit.LogAsync(userId, "OrderRejected", $"Insufficient holdings for sell {request.Quantity} {instrument.Symbol}");
                     return new OrderResult(false, "You don't own enough shares to sell.", null);
                 }
 
@@ -110,7 +113,8 @@ public class TradingService : ITradingService
 
             await _db.SaveChangesAsync();
             await tx.CommitAsync();
-
+            await _audit.LogAsync(userId, "OrderPlaced", $"{side} {request.Quantity} {instrument.Symbol} @ {price}");
+            
             return new OrderResult(true, null, new OrderDto(
                 order.Id, instrument.Id, instrument.Symbol, side.ToString(),
                 request.Quantity, price, total, order.Status.ToString(), order.CreatedAt));

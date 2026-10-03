@@ -120,3 +120,12 @@ public class OtpCode
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ConsumedAt { get; set; }
 }
+public class AuditLog
+{
+    public long Id { get; set; }
+    public int? UserId { get; set; }
+    public string EventType { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public string? IpAddress { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
