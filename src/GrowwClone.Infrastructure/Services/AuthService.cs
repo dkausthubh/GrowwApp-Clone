@@ -7,6 +7,7 @@ using GrowwClone.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Hosting;
 
 namespace GrowwClone.Infrastructure.Services;
 
@@ -15,11 +16,12 @@ public class AuthService : IAuthService
     private const decimal WelcomeBalance = 100000m;
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
-
-    public AuthService(AppDbContext db, IConfiguration config)
+    private readonly IHostEnvironment _env;
+    public AuthService(AppDbContext db, IConfiguration config, IHostEnvironment env)
     {
         _db = db;
         _config = config;
+        _env = env;
     }
 
     public async Task<AuthResult> RegisterAsync(RegisterRequest request)
@@ -49,17 +51,54 @@ public class AuthService : IAuthService
         return new AuthResult(true, null, await IssueTokensAsync(user));
     }
 
-    public async Task<AuthResult> LoginAsync(LoginRequest request)
+  public async Task<LoginResult> LoginAsync(LoginRequest request)
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            return new AuthResult(false, "Invalid email or password.", null);
+            return new LoginResult(false, "Invalid email or password.", false, null, null);
 
+        var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
+        var sessionToken = GenerateRefreshToken();   // reuse the same random-token helper
+        var expires = DateTime.UtcNow.AddMinutes(5);
+
+        _db.OtpCodes.Add(new OtpCode
+        {
+            UserId = user.Id,
+            CodeHash = Hash(code),
+            SessionTokenHash = Hash(sessionToken),
+            ExpiresAt = expires
+        });
+        await _db.SaveChangesAsync();
+
+        // Dev-only: no email provider configured yet, so log instead of sending.
+        // will Swap this for a real provider (SendGrid, Azure Communication Services, etc.) later.
+        Console.WriteLine($"[DEV] OTP for {user.Email}: {code} (expires {expires:HH:mm:ss} UTC)");
+
+        var challenge = new MfaChallenge(sessionToken, expires, _env.IsDevelopment() ? code : null);
+        return new LoginResult(true, null, true, challenge, null);
+    }
+    public async Task<AuthResult> VerifyOtpAsync(VerifyOtpRequest request)
+    {
+        var sessionHash = Hash(request.MfaToken);
+        var otp = await _db.OtpCodes.FirstOrDefaultAsync(o => o.SessionTokenHash == sessionHash);
+    
+        if (otp is null || otp.ConsumedAt is not null)
+            return new AuthResult(false, "Invalid or already-used login session. Please log in again.", null);
+    
+        if (otp.ExpiresAt <= DateTime.UtcNow)
+            return new AuthResult(false, "Code expired. Please log in again.", null);
+    
+        if (otp.CodeHash != Hash(request.Code))
+            return new AuthResult(false, "Incorrect code.", null);
+    
+        otp.ConsumedAt = DateTime.UtcNow;   // one-time use
+        await _db.SaveChangesAsync();
+    
+        var user = await _db.Users.FirstAsync(u => u.Id == otp.UserId);
         return new AuthResult(true, null, await IssueTokensAsync(user));
     }
-
     public async Task<UserDto?> GetMeAsync(int userId)
     {
         return await _db.Users

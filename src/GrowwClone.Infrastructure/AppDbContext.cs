@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<PriceHistory> PriceHistory => Set<PriceHistory>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.Entity<User>().HasIndex(u => u.Email).IsUnique();
@@ -52,6 +53,7 @@ public class AppDbContext : DbContext
         b.Entity<PriceHistory>().HasIndex(p => new { p.InstrumentId, p.RecordedAt });
         b.Entity<RefreshToken>().HasIndex(r => r.TokenHash).IsUnique();
         b.Entity<RefreshToken>().HasIndex(r => r.UserId);
+        b.Entity<OtpCode>().HasIndex(o => o.SessionTokenHash).IsUnique();
     }
 
     private static Instrument Seed(int id, string symbol, string name, decimal price) => new()

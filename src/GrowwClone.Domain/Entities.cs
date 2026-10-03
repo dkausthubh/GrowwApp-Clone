@@ -110,3 +110,13 @@ public class RefreshToken
     public string? ReplacedByHash { get; set; }   // links rotation chain, used for reuse detection
     public bool IsActive => RevokedAt is null && ExpiresAt > DateTime.UtcNow;
 }
+public class OtpCode
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string CodeHash { get; set; } = "";
+    public string SessionTokenHash { get; set; } = "";
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ConsumedAt { get; set; }
+}

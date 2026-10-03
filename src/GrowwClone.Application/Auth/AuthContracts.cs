@@ -28,11 +28,22 @@ public record UserDto(int Id, string FullName, string Email, decimal WalletBalan
 
 public record AuthResult(bool Success, string? Error, AuthResponse? Data);
 
+
 public interface IAuthService
 {
     Task<AuthResult> RegisterAsync(RegisterRequest request);
-    Task<AuthResult> LoginAsync(LoginRequest request);
+    Task<LoginResult> LoginAsync(LoginRequest request);          // changed return type
     Task<UserDto?> GetMeAsync(int userId);
     Task<AuthResult> RefreshAsync(RefreshRequest request);
     Task LogoutAsync(string refreshToken);
+    Task<AuthResult> VerifyOtpAsync(VerifyOtpRequest request);   // new
 }
+public class VerifyOtpRequest
+{
+    [Required] public string MfaToken { get; set; } = "";
+    [Required, StringLength(6, MinimumLength = 6)] public string Code { get; set; } = "";
+}
+
+public record MfaChallenge(string MfaToken, DateTime ExpiresAt, string? DevCode);
+
+public record LoginResult(bool Success, string? Error, bool RequiresMfa, MfaChallenge? Challenge, AuthResponse? Data);

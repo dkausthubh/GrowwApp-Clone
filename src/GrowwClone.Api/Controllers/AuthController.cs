@@ -18,12 +18,20 @@ public class AuthController : ControllerBase
     {
         var result = await _auth.RegisterAsync(request);
         return result.Success ? Ok(result.Data) : BadRequest(new { error = result.Error });
-    }
-
+    }   
+    
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
         var result = await _auth.LoginAsync(request);
+        if (!result.Success) return Unauthorized(new { error = result.Error });
+        return Ok(new { requiresMfa = true, challenge = result.Challenge });
+    }
+
+    [HttpPost("verify-otp")]
+    public async Task<IActionResult> VerifyOtp(VerifyOtpRequest request)
+    {
+        var result = await _auth.VerifyOtpAsync(request);
         return result.Success ? Ok(result.Data) : Unauthorized(new { error = result.Error });
     }
 
