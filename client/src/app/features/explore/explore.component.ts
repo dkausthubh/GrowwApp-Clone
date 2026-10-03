@@ -12,12 +12,13 @@ import { WatchlistService } from '../../core/watchlist.service';
 import { Instrument } from '../../core/models';
 import { OrderDialogComponent } from './order-dialog.component';
 import { AlertDialogComponent } from './alert-dialog.component';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-explore',
   standalone: true,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatIconModule,
-    MatButtonModule, MatDialogModule, CurrencyPipe, DecimalPipe],
+    MatButtonModule, MatDialogModule, CurrencyPipe, DecimalPipe, RouterLink],
   template: `
     <h2>Stocks</h2>
     <mat-form-field appearance="outline" class="search">
@@ -36,12 +37,14 @@ import { AlertDialogComponent } from './alert-dialog.component';
               <mat-icon>{{ starred().has(i.id) ? 'star' : 'star_border' }}</mat-icon>
             </button>
           </div>
-          <div class="sym">{{ i.symbol }}</div>
-          <div class="name">{{ i.name }}</div>
-          <div class="price">{{ i.lastPrice | currency:'INR':'symbol':'1.2-2' }}</div>
-          <div class="chg" [class.up]="i.change >= 0" [class.down]="i.change < 0">
-            {{ i.change | number:'1.2-2' }} ({{ i.changePercent | number:'1.2-2' }}%)
-          </div>
+          <a [routerLink]="['/instrument', i.id]" class="tile-link">
+            <div class="sym">{{ i.symbol }}</div>
+            <div class="name">{{ i.name }}</div>
+            <div class="price">{{ i.lastPrice | currency:'INR':'symbol':'1.2-2' }}</div>
+            <div class="chg" [class.up]="i.change >= 0" [class.down]="i.change < 0">
+              {{ i.change | number:'1.2-2' }} ({{ i.changePercent | number:'1.2-2' }}%)
+            </div>
+          </a>
           <button mat-flat-button class="buy-btn" (click)="openOrder(i)">Buy / Sell</button>
         </div>
       } @empty {
@@ -63,6 +66,7 @@ import { AlertDialogComponent } from './alert-dialog.component';
     .up { color: #00b386; }
     .down { color: #eb5b3c; }
     .buy-btn { margin-top: 12px; width: 100%; background: #00b386; color: #fff; }
+    .tile-link { display: block; text-decoration: none; color: inherit; }
   `]
 })
 export class ExploreComponent implements OnInit, OnDestroy {

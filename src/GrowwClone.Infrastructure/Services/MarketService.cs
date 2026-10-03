@@ -42,4 +42,14 @@ public class MarketService : IMarketService
         return new InstrumentDto(i.Id, i.Symbol, i.Name, i.Type.ToString(), i.Exchange,
             i.LastPrice, i.PrevClose, Math.Round(change, 2), pct);
     }
+    public async Task<List<PricePointDto>> GetHistoryAsync(int instrumentId, int minutes)
+    {
+        var since = DateTime.UtcNow.AddMinutes(-minutes);
+        return await _db.PriceHistory
+            .AsNoTracking()
+            .Where(p => p.InstrumentId == instrumentId && p.RecordedAt >= since)
+            .OrderBy(p => p.RecordedAt)
+            .Select(p => new PricePointDto(p.RecordedAt, p.Price))
+            .ToListAsync();
+    }
 }

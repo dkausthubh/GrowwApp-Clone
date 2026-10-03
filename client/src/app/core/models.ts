@@ -122,3 +122,7 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+export interface PricePoint {
+  recordedAt: string;
+  price: number;
+}

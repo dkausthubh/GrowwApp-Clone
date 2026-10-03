@@ -32,7 +32,11 @@ export const routes: Routes = [
         path: 'alerts',
         loadComponent: () => import('./features/alerts/alerts.component').then(m => m.AlertsComponent),
     },
-    ],
+    {
+        path: 'instrument/:id',
+        loadComponent: () => import('./features/instrument-detail/instrument-detail.component').then(m => m.InstrumentDetailComponent),
+    },
+  ],
 },
   { path: '**', redirectTo: '' },
 ];

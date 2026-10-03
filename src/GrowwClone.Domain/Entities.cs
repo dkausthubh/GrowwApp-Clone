@@ -91,3 +91,10 @@ public class Notification
     public bool IsRead { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+public class PriceHistory
+{
+    public long Id { get; set; }
+    public int InstrumentId { get; set; }
+    public decimal Price { get; set; }
+    public DateTime RecordedAt { get; set; } = DateTime.UtcNow;
+}
