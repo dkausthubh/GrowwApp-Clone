@@ -115,7 +115,7 @@ App runs at `http://localhost:4200`.
 - [x] Price alerts
 - [x] Historical charts
 - [x] Security hardening (refresh tokens, MFA, rate limiting, audit logs)
-- [ ] Angular updates for two-step (password + OTP) login flow
+- [x] Angular updates for two-step (password + OTP) login flow
 - [ ] SIP / recurring investments
 - [ ] Admin panel
 - [ ] Deployment (live demo)
