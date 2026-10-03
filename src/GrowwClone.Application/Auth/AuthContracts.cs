@@ -15,7 +15,14 @@ public class LoginRequest
     [Required] public string Password { get; set; } = "";
 }
 
-public record AuthResponse(string Token, DateTime ExpiresAt, string FullName, string Email);
+public class RefreshRequest
+{
+    [Required] public string RefreshToken { get; set; } = "";
+}
+
+public record AuthResponse(
+    string Token, DateTime ExpiresAt, string RefreshToken,
+    string FullName, string Email);
 
 public record UserDto(int Id, string FullName, string Email, decimal WalletBalance);
 
@@ -26,4 +33,6 @@ public interface IAuthService
     Task<AuthResult> RegisterAsync(RegisterRequest request);
     Task<AuthResult> LoginAsync(LoginRequest request);
     Task<UserDto?> GetMeAsync(int userId);
+    Task<AuthResult> RefreshAsync(RefreshRequest request);
+    Task LogoutAsync(string refreshToken);
 }

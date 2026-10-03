@@ -27,6 +27,20 @@ public class AuthController : ControllerBase
         return result.Success ? Ok(result.Data) : Unauthorized(new { error = result.Error });
     }
 
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshRequest request)
+    {
+        var result = await _auth.RefreshAsync(request);
+        return result.Success ? Ok(result.Data) : Unauthorized(new { error = result.Error });
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshRequest request)
+    {
+        await _auth.LogoutAsync(request.RefreshToken);
+        return Ok();
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> Me()
