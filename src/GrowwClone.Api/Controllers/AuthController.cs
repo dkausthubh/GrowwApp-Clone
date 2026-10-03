@@ -3,11 +3,13 @@ using System.Security.Claims;
 using GrowwClone.Application.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GrowwClone.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
@@ -19,7 +21,7 @@ public class AuthController : ControllerBase
         var result = await _auth.RegisterAsync(request);
         return result.Success ? Ok(result.Data) : BadRequest(new { error = result.Error });
     }   
-    
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
