@@ -2,7 +2,7 @@
 
 A paper-trading investment platform inspired by Groww, built to learn full-stack development with a real-world financial application domain: secure auth, live market data simulation, watchlists, order execution, portfolio P&L tracking, price alerts, historical charts, and security hardening.
 
-> ⚠️ This is a learning project. All trading uses virtual money — no real money, broker, or market data is involved.
+> This is a learning project. All trading uses virtual money — no real money, broker, or market data is involved.
 
 ## Tech stack
 
