@@ -98,3 +98,34 @@ public class PriceHistory
     public decimal Price { get; set; }
     public DateTime RecordedAt { get; set; } = DateTime.UtcNow;
 }
+public class RefreshToken
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public User? User { get; set; }
+    public string TokenHash { get; set; } = "";
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? RevokedAt { get; set; }
+    public string? ReplacedByHash { get; set; }   // links rotation chain, used for reuse detection
+    public bool IsActive => RevokedAt is null && ExpiresAt > DateTime.UtcNow;
+}
+public class OtpCode
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string CodeHash { get; set; } = "";
+    public string SessionTokenHash { get; set; } = "";
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ConsumedAt { get; set; }
+}
+public class AuditLog
+{
+    public long Id { get; set; }
+    public int? UserId { get; set; }
+    public string EventType { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public string? IpAddress { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
