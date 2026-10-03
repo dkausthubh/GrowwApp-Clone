@@ -126,3 +126,21 @@ export interface PricePoint {
   recordedAt: string;
   price: number;
 }
+export interface AuthResponse {
+  token: string;
+  expiresAt: string;
+  refreshToken: string;
+  fullName: string;
+  email: string;
+}
+
+export interface MfaChallenge {
+  mfaToken: string;
+  expiresAt: string;
+  devCode: string | null;
+}
+
+export interface LoginChallengeResponse {
+  requiresMfa: boolean;
+  challenge: MfaChallenge;
+}

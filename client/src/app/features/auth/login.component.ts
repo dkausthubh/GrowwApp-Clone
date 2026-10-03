@@ -7,6 +7,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../../core/auth.service';
 
+type Step = 'credentials' | 'otp';
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -14,40 +16,68 @@ import { AuthService } from '../../core/auth.service';
   template: `
     <div class="wrap">
       <mat-card class="card">
-        <h2>{{ isRegister() ? 'Create your account' : 'Welcome to Groww Clone' }}</h2>
-        <p class="sub">Simple, free investing (paper trading, virtual money)</p>
 
-        <form [formGroup]="form" (ngSubmit)="submit()">
-          @if (isRegister()) {
+        @if (step() === 'credentials') {
+          <h2>{{ isRegister() ? 'Create your account' : 'Welcome to Groww Clone' }}</h2>
+          <p class="sub">Simple, free investing (paper trading, virtual money)</p>
+
+          <form [formGroup]="credForm" (ngSubmit)="submitCredentials()">
+            @if (isRegister()) {
+              <mat-form-field appearance="outline">
+                <mat-label>Full name</mat-label>
+                <input matInput formControlName="fullName" />
+                <mat-error>Name is required</mat-error>
+              </mat-form-field>
+            }
+
             <mat-form-field appearance="outline">
-              <mat-label>Full name</mat-label>
-              <input matInput formControlName="fullName" />
-              <mat-error>Name is required</mat-error>
+              <mat-label>Email address</mat-label>
+              <input matInput type="email" formControlName="email" />
+              <mat-error>Enter a valid email</mat-error>
             </mat-form-field>
-          }
 
-          <mat-form-field appearance="outline">
-            <mat-label>Email address</mat-label>
-            <input matInput type="email" formControlName="email" />
-            <mat-error>Enter a valid email</mat-error>
-          </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Password</mat-label>
+              <input matInput type="password" formControlName="password" />
+              <mat-error>Minimum 6 characters</mat-error>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Password</mat-label>
-            <input matInput type="password" formControlName="password" />
-            <mat-error>Minimum 6 characters</mat-error>
-          </mat-form-field>
+            @if (error()) { <div class="error">{{ error() }}</div> }
 
-          @if (error()) { <div class="error">{{ error() }}</div> }
+            <button mat-flat-button class="go" type="submit" [disabled]="loading()">
+              {{ loading() ? 'Please wait...' : (isRegister() ? 'Register' : 'Continue') }}
+            </button>
+          </form>
 
-          <button mat-flat-button class="go" type="submit" [disabled]="loading()">
-            {{ loading() ? 'Please wait...' : (isRegister() ? 'Register' : 'Continue') }}
+          <button mat-button type="button" (click)="toggleMode()">
+            {{ isRegister() ? 'Already have an account? Login' : 'New here? Create an account' }}
           </button>
-        </form>
+        }
 
-        <button mat-button type="button" (click)="toggle()">
-          {{ isRegister() ? 'Already have an account? Login' : 'New here? Create an account' }}
-        </button>
+        @if (step() === 'otp') {
+          <h2>Verify it's you</h2>
+          <p class="sub">
+            We sent a 6-digit code to {{ pendingEmail() }}.
+            @if (devCode()) { <strong>(dev code: {{ devCode() }})</strong> }
+          </p>
+
+          <form [formGroup]="otpForm" (ngSubmit)="submitOtp()">
+            <mat-form-field appearance="outline">
+              <mat-label>6-digit code</mat-label>
+              <input matInput formControlName="code" maxlength="6" inputmode="numeric" />
+              <mat-error>Enter the 6-digit code</mat-error>
+            </mat-form-field>
+
+            @if (error()) { <div class="error">{{ error() }}</div> }
+
+            <button mat-flat-button class="go" type="submit" [disabled]="loading()">
+              {{ loading() ? 'Verifying...' : 'Verify and continue' }}
+            </button>
+          </form>
+
+          <button mat-button type="button" (click)="backToCredentials()">&larr; Back</button>
+        }
+
       </mat-card>
     </div>
   `,
@@ -66,40 +96,83 @@ export class LoginComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
 
+  step = signal<Step>('credentials');
   isRegister = signal(false);
   loading = signal(false);
   error = signal('');
 
-  form = this.fb.nonNullable.group({
+  pendingEmail = signal('');
+  devCode = signal<string | null>(null);
+  private mfaToken = '';
+
+  credForm = this.fb.nonNullable.group({
     fullName: [''],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
-  toggle() {
+  otpForm = this.fb.nonNullable.group({
+    code: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
+  });
+
+  toggleMode() {
     this.isRegister.update(v => !v);
-    const c = this.form.controls.fullName;
+    const c = this.credForm.controls.fullName;
     c.setValidators(this.isRegister() ? [Validators.required] : []);
     c.updateValueAndValidity();
     this.error.set('');
   }
 
-  submit() {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+  submitCredentials() {
+    if (this.credForm.invalid) { this.credForm.markAllAsTouched(); return; }
     this.loading.set(true);
     this.error.set('');
-    const v = this.form.getRawValue();
+    const v = this.credForm.getRawValue();
 
-    const call$ = this.isRegister()
-      ? this.auth.register(v)
-      : this.auth.login({ email: v.email, password: v.password });
+    if (this.isRegister()) {
+      // Registration has no MFA step — straight to a session.
+      this.auth.register(v).subscribe({
+        next: () => this.router.navigate(['/explore']),
+        error: e => {
+          this.error.set(e.error?.error ?? 'Something went wrong. Is the API running?');
+          this.loading.set(false);
+        },
+      });
+      return;
+    }
 
-    call$.subscribe({
-      next: () => this.router.navigate(['/explore']),
+    this.auth.login({ email: v.email, password: v.password }).subscribe({
+      next: res => {
+        this.mfaToken = res.challenge.mfaToken;
+        this.devCode.set(res.challenge.devCode);
+        this.pendingEmail.set(v.email);
+        this.step.set('otp');
+        this.loading.set(false);
+      },
       error: e => {
         this.error.set(e.error?.error ?? 'Something went wrong. Is the API running?');
         this.loading.set(false);
       },
     });
+  }
+
+  submitOtp() {
+    if (this.otpForm.invalid) { this.otpForm.markAllAsTouched(); return; }
+    this.loading.set(true);
+    this.error.set('');
+
+    this.auth.verifyOtp(this.mfaToken, this.otpForm.controls.code.value).subscribe({
+      next: () => this.router.navigate(['/explore']),
+      error: e => {
+        this.error.set(e.error?.error ?? 'Verification failed.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  backToCredentials() {
+    this.step.set('credentials');
+    this.error.set('');
+    this.otpForm.reset();
   }
 }
